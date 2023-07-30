@@ -1,0 +1,103 @@
+name: Build and deploy .NET Core application to Web App OctoBackendAPI with API Management Service OctoBackendAPIapi-OctoBackendAPI
+on:
+  push:
+    branches:
+    - main
+env:
+  AZURE_WEBAPP_NAME: OctoBackendAPI
+  AZURE_WEBAPP_PACKAGE_PATH: src/API/WebAPI/OctoBackend.API/publish
+  AZURE_APIM_RESOURCE_PATH: /
+  AZURE_APIM_RESOURCEGROUP: OctoResGroup
+  AZURE_APIM_SERVICENAME: OctoBackendAPIapi
+  AZURE_APIM_API_ID: OctoBackendAPI
+  AZURE_APIM_APPSERVICEURL: https://octobackendapi.azurewebsites.net
+  SWASHBUCLE_ASPNET_CORE_CLI_PACKAGE_VERSION: 5.6.3
+  SWASHBUCKLE_DOTNET_CORE_VERSION: 7.0.x
+  API_IMPORT_SPECIFICATION_PATH: src/API/WebAPI/OctoBackend.API/publish/swagger.json
+  API_IMPORT_DLL: src/API/WebAPI/OctoBackend.API/bin/Release/net7.0/OctoBackend.API.dll
+  API_IMPORT_VERSION: v1
+  CONFIGURATION: Release
+  DOTNET_CORE_VERSION: 7.0.x
+  WORKING_DIRECTORY: src/API/WebAPI/OctoBackend.API
+  
+  Logging__LogLevel__Default: Information
+  Logging__LogLevel__Microsoft.AspNetCore: Warning
+  AllowedHosts: '*'
+  MongoDB__ConnectionURI: mongodb+srv://octouser:chT6eopUSotHWJgf@octo.201vyzo.mongodb.net/?retryWrites=true&w=majority
+  MongoDB__DatabaseName: OCTO
+  MongoDB__UserCollectionName: Users
+  MongoDB__AvatarCollectionName: Avatars
+  MongoDB__EventCollectionName: Events
+  MongoDB__GoogleUserTokenCollectionName: GoogleUserTokens
+  AzureStorage__AzureConnectionString: DefaultEndpointsProtocol=https;AccountName=octo;AccountKey=L73RzkHhg45H96GKIxGmeWgJu2YY/PKIWyVt5YrKchhcUR7uS2V4dni2klt1nmkCA4IxNJ5A2aAH+AStUgnKrw==;EndpointSuffix=core.windows.net
+  AzureStorage__AvatarsContainerName: avatar-images
+  AzureStorage__CustomPhotosContainerName: custom-images
+  AzureStorage__BasePathURL: https://octo.blob.core.windows.net/
+  Jwt__Key: AŞDt1vP3lXToPQ1g2MyIkljdsljfsd90işli
+  Jwt__Issuer: http://localhost:20110
+  Jwt__Audience: http://localhost:20110
+  Jwt__AccessTokenLifeTime: 700
+  Jwt__RefreshTokenLifeTime: 80
+  Email__Username: no-reply@joinocto.com
+  Email__Password: k&6wmxxP
+  Email__RemindQuestionsHtml: HtmlFiles/ConfirmEmail.html
+  Email__ForgotPasswordHtml: HtmlFiles/ResetPassword.html
+  GoogleAuth__ClientID: 254852527334-6u8mf2u5p9ls069v3v0h19el6flktajc.apps.googleusercontent.com
+  GoogleAuth__SecretKey: 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
+  RabbitMQ__ConnectionURI: amqps://uqdmonmy:g1Ck8PibWHMm3Q2fMVh9N7YWzmb3Dtzg@goose.rmq2.cloudamqp.com/uqdmonmy
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    - name: Setup SwashBuckle .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: ${{ env.SWASHBUCKLE_DOTNET_CORE_VERSION }}
+    - name: Restore
+      run: dotnet restore ${{ env.WORKING_DIRECTORY }}
+    - name: Build
+      run: dotnet build ${{ env.WORKING_DIRECTORY }} --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Test
+      run: dotnet test ${{ env.WORKING_DIRECTORY }} --no-build
+    - name: Publish
+      run: dotnet publish ${{ env.WORKING_DIRECTORY }} --configuration ${{ env.CONFIGURATION }} --self-contained true --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+    - name: Install Swashbuckle CLI .NET Global Tool
+      run: dotnet tool install --global Swashbuckle.AspNetCore.Cli --version 6.5.0
+      working-directory: ${{ env.WORKING_DIRECTORY }}
+    - name: Generate Open API Specification Document
+      run: swagger tofile --output "${{ env.API_IMPORT_SPECIFICATION_PATH }}" "${{ env.API_IMPORT_DLL }}" "${{ env.API_IMPORT_VERSION }}"
+    - name: Publish Artifacts
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: webapp
+        path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: '{"clientId":"7c1de788-303d-4e83-a3a7-07710c87d4a9","clientSecret":"dvY8Q~rhyNvnmMLwqi46xUJ.VUJHsWvW5rEybdA_","subscriptionId":"8e2e2abf-c16e-4940-b564-fb43c33205fc","tenantId":"633eb7e4-1539-4a7c-9259-8803ef2e5c17"}'
+    - name: Download artifact from build job
+      uses: actions/download-artifact@v2
+      with:
+        name: webapp
+        path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+    - name: Deploy to Azure WebApp
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        publish-profile: ${{ secrets.PUBLISH_PROFILE }}
+    - name: Import API into Azure API Management
+      run: az apim api import --path "${{ env.AZURE_APIM_RESOURCE_PATH }}" --resource-group "${{ env.AZURE_APIM_RESOURCEGROUP }}" --service-name "${{ env.AZURE_APIM_SERVICENAME }}" --api-id "${{ env.AZURE_APIM_API_ID }}" --service-url "${{ env.AZURE_APIM_APPSERVICEURL }}" --specification-path "${{ env.API_IMPORT_SPECIFICATION_PATH }}" --specification-format OpenApi --subscription-required false
+    - name: logout
+      run: >
+        az logout
