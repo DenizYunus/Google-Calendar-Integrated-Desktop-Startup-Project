@@ -33,3 +33,40 @@ To use the sidebar application, follow these steps:
 4. Explore the software.
 # Conclusion
 This sidebar application was developed as a part of my work with a startup. It provides a simple and user-friendly way to manage your schedule and access your favorite websites. The .NET Backend, Unity client software, and frontend software for registration work together to make this application a reality.
+
+# Screenshots for the Curious
+## Login Screen
+![Login](Screenshots/Login.png?raw=true)
+
+## Shrinked Screen
+![Shrinked](Screenshots/Shrinked.png?raw=true)
+
+## Shrinked To Icon Screen
+![Shrinked To Icon](Screenshots/ShrinkedToIcon.png?raw=true)
+
+## Slice Started Screen
+![Slice Started](Screenshots/SliceStarted.png?raw=true)
+
+## Todo List Page Screen
+![Todo List Page](Screenshots/TodoListPage.png?raw=true)
+
+## Select ToDo Slice In Screen
+![Select ToDo Slice In](Screenshots/SelectToDoSliceIn.png?raw=true)
+
+## Completed Todo Screen
+![Completed Todo](Screenshots/CompletedTodo.png?raw=true)
+
+## Moved To In Progress Screen
+![Moved To In Progress](Screenshots/MovedToInProgress.png?raw=true)
+
+## Hide Sliced In Screen
+![Hide Sliced In](Screenshots/HideSlicedIn.png?raw=true)
+
+## Canceled Slice Screen
+![Canceled Slice](Screenshots/CancelSlice.png?raw=true)
+
+## Event Creation Screen
+![Event Creation](Screenshots/EventCreation.png?raw=true)
+
+## Event Created Screen
+![Event Created](Screenshots/EventCreated.png?raw=true)
